@@ -199,7 +199,18 @@ async function run() {
       const updatedDoc ={
         $set: {
           type: 'premium',
-          contactReq: 'approved'
+        }
+      }
+      const result = await bioDataCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
+
+    app.patch('/bioData/contact/:id', verifyToken, verifyAdmin, async(req, res) =>{
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updatedDoc ={
+        $set: {
+          status: 'approved',
         }
       }
       const result = await bioDataCollection.updateOne(filter, updatedDoc);
@@ -341,6 +352,18 @@ async function run() {
       res.send(result);
     })
 
+    app.patch('/requestContacts/:id', verifyToken, verifyAdmin, async(req, res) =>{
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updatedDoc ={
+        $set: {
+          status: 'approved',
+        }
+      }
+      const result = await reqContactCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
+
     app.delete('/reqContacts/:id', async(req, res) =>{
       const id = req.params.id;
       const query = {_id: new ObjectId(id)};
@@ -350,6 +373,18 @@ async function run() {
 
     app.get('/requestPremium', async(req, res) =>{
       const result = await reqPremiumCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.patch('/requestPremium/:id', verifyToken, verifyAdmin, async(req, res) =>{
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updatedDoc ={
+        $set: {
+          status: 'premium',
+        }
+      }
+      const result = await reqPremiumCollection.updateOne(filter, updatedDoc);
       res.send(result);
     })
 
@@ -371,13 +406,21 @@ async function run() {
             count: { $sum: 1 }
           }
         }
-      ];
-      
+      ];     
       const genderCounts = await bioDataCollection.aggregate(pipeline).toArray();
-      
-      // genderCounts will be an array of objects, each containing _id (gender) and count properties
       const maleCount = genderCounts.find(item => item._id === "male")?.count || 0;
       const femaleCount = genderCounts.find(item => item._id === "female")?.count || 0;
+
+      const typePipeline = [
+        {
+          $group: {
+            _id: "$type",
+            count: { $sum: 1 }
+          }
+        }
+      ];
+      const typeCounts = await bioDataCollection.aggregate(typePipeline).toArray();
+      const premiumCount = typeCounts.find(item => item._id === "premium")?.count || 0;
 
       // const reqContacts = await reqContactCollection.find().toArray();
       // const revenue = reqContacts.reduce( (total, payment) => total + payment.price, 0);
@@ -393,11 +436,13 @@ async function run() {
       ]).toArray();
 
       const revenue = result.length > 0 ? result[0].totalRevenue : 0;
+
       res.send({
         users,
         bioDataItems,
         maleCount,
         femaleCount,
+        premiumCount,
         revenue
       });
     })
