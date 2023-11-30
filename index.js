@@ -138,9 +138,19 @@ async function run() {
       const filter = {_id: new ObjectId(id)};
       const updatedDoc ={
         $set: {
-          role: 'admin',
-          type: 'premium',
-          contactReq: 'approved'
+          role: 'admin'
+        }
+      }
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
+
+    app.patch('/users/premium/:id', verifyToken, verifyAdmin, async(req, res) =>{
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updatedDoc ={
+        $set: {
+          type: 'premium'
         }
       }
       const result = await userCollection.updateOne(filter, updatedDoc);
